@@ -1,28 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
   const grid = document.querySelector('.grid')
   const doodler = document.createElement('div')
+  let isGameOver = false
+  let speed = 3
+  let platformCount = 5
+  let platforms = []
+  let score = 0
   let doodlerLeftSpace = 50
   let startPoint = 150
   let doodlerBottomSpace = startPoint
-  let isGameOver = false
-  let platformCount = 5
-  let platforms = []
+  const gravity = 0.9
   let upTimerId
   let downTimerId
   let isJumping = true
   let isGoingLeft = false
   let isGoingRight = false
-  let leftTimeId
-  let rightTimeId
-
-  function createDoodler() {
-    grid.appendChild(doodler)
-    doodler.classList.add('doodler')
-    doodlerLeftSpace = platforms[0].left
-    doodler.style.left = doodlerLeftSpace + 'px'
-    doodler.style.bottom = doodlerBottomSpace + 'px'
-
-  }
+  let leftTimerId
+  let rightTimerId
 
   class Platform {
     constructor(newPlatBottom) {
@@ -38,11 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+
   function createPlatforms() {
-    for (let i = 0; i < platformCount; i++) {
+    for(let i =0; i < platformCount; i++) {
       let platGap = 600 / platformCount
       let newPlatBottom = 100 + i * platGap
-      let newPlatform = new Platform(newPlatBottom)
+      let newPlatform = new Platform (newPlatBottom)
       platforms.push(newPlatform)
       console.log(platforms)
     }
@@ -50,115 +45,150 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function movePlatforms() {
     if (doodlerBottomSpace > 200) {
-      platforms.forEach(platform => {
-        platform.bottom -= 4
-        let visual = platform.visual
-        visual.style.bottom = platform.bottom + 'px'
+        platforms.forEach(platform => {
+          platform.bottom -= 4
+          let visual = platform.visual
+          visual.style.bottom = platform.bottom + 'px'
+
+          if(platform.bottom < 10) {
+            let firstPlatform = platforms[0].visual
+            firstPlatform.classList.remove('platform')
+            platforms.shift()
+            console.log(platforms)
+            score++
+            var newPlatform = new Platform(600)
+            platforms.push(newPlatform)
+          }
       })
     }
+
   }
 
-  function jump() {
-    clearInterval(downTimerId)
-    isJumping = true
-    upTimerId = setInterval(function () {
-      doodlerBottomSpace += 20
-      doodler.style.bottom = doodlerBottomSpace + 'px'
-      if (doodlerBottomSpace > startPoint + 200) {
-        fall()
-      }
-    },30)
+  function createDoodler() {
+    grid.appendChild(doodler)
+    doodler.classList.add('doodler')
+    doodlerLeftSpace = platforms[0].left
+    doodler.style.left = doodlerLeftSpace + 'px'
+    doodler.style.bottom = doodlerBottomSpace + 'px'
   }
 
-  function fall() {
+function fall() {
+  isJumping = false
     clearInterval(upTimerId)
-    isJumping = false
     downTimerId = setInterval(function () {
       doodlerBottomSpace -= 5
       doodler.style.bottom = doodlerBottomSpace + 'px'
       if (doodlerBottomSpace <= 0) {
         gameOver()
       }
-
       platforms.forEach(platform => {
         if (
           (doodlerBottomSpace >= platform.bottom) &&
-          (doodlerBottomSpace <= platform.bottom + 15) &&
-          ((doodlerBottomSpace + 60) >= platform.left) &&
-          (doodlerBottomSpace <= (platform.left + 85)) &&
+          (doodlerBottomSpace <= (platform.bottom + 15)) &&
+          ((doodlerLeftSpace + 60) >= platform.left) &&
+          (doodlerLeftSpace <= (platform.left + 85)) &&
           !isJumping
-        ){
-          console.log('landed')
-          startPoint = doodlerBottomSpace
-          jump()
-        }
+          ) {
+            console.log('tick')
+            startPoint = doodlerBottomSpace
+            jump()
+            console.log('start', startPoint)
+            isJumping = true
+          }
       })
 
-    },30)
-  }
+    },20)
+}
 
-  function gameOver() {
-    console.log('game over.')
-    isGameOver = true
-    clearInterval(upTimerId)
+  function jump() {
     clearInterval(downTimerId)
-  }
-
-  function control(e) {
-    if (e.key === "ArrowLeft") {
-        moveLeft()
-    } else if (e.key === "ArrowRight") {
-        moveRight()
-    } else if (e.key === "ArrowUp") {
-        moveStraight()
-    }
+    isJumping = true
+    upTimerId = setInterval(function () {
+      console.log(startPoint)
+      console.log('1', doodlerBottomSpace)
+      doodlerBottomSpace += 20
+      doodler.style.bottom = doodlerBottomSpace + 'px'
+      console.log('2',doodlerBottomSpace)
+      console.log('s',startPoint)
+      if (doodlerBottomSpace > (startPoint + 200)) {
+        fall()
+        isJumping = false
+      }
+    },30)
   }
 
   function moveLeft() {
     if (isGoingRight) {
-      clearInterval(rightTimeId)
-      isGoingRight = false
+        clearInterval(rightTimerId)
+        isGoingRight = false
     }
     isGoingLeft = true
-    leftTimeId = setInterval(function () {
-       if (doodlerLeftSpace >= 0) {
-         doodlerLeftSpace -= 5
-         doodler.style.left = doodlerLeftSpace + 'px'
-       } else moveRight()
-    },30)
+    leftTimerId = setInterval(function () {
+        if (doodlerLeftSpace >= 0) {
+          console.log('going left')
+          doodlerLeftSpace -=5
+           doodler.style.left = doodlerLeftSpace + 'px'
+        } else moveRight()
+    },20)
   }
 
   function moveRight() {
-     if (isGoingLeft) {
-      clearInterval(leftTimeId)
-      isGoingLeft = false
+    if (isGoingLeft) {
+        clearInterval(leftTimerId)
+        isGoingLeft = false
     }
     isGoingRight = true
-    rightTimeId = setInterval(function () {
-      if (doodlerLeftSpace <= 340) {
-        doodlerLeftSpace += 5
+    rightTimerId = setInterval(function () {
+      //changed to 313 to fit doodle image
+      if (doodlerLeftSpace <= 313) {
+        console.log('going right')
+        doodlerLeftSpace +=5
         doodler.style.left = doodlerLeftSpace + 'px'
       } else moveLeft()
-    },30)
+    },20)
   }
 
-  function moveStraight () {
+  function moveStraight() {
     isGoingLeft = false
     isGoingRight = false
-    clearInterval(rightTimeId)
-    clearInterval(leftTimeId)
+    clearInterval(leftTimerId)
+    clearInterval(rightTimerId)
   }
+
+  //assign functions to keyCodes
+  function control(e) {
+    doodler.style.bottom = doodlerBottomSpace + 'px'
+    if(e.key === 'ArrowLeft') {
+      moveLeft()
+    } else if (e.key === 'ArrowRight') {
+      moveRight()
+    } else if (e.key === 'ArrowUp') {
+      moveStraight()
+    }
+  }
+
+  function gameOver() {
+    isGameOver = true
+    while (grid.firstChild) {
+      console.log('remove')
+      grid.removeChild(grid.firstChild)
+    }
+    grid.innerHTML = score
+    clearInterval(upTimerId)
+    clearInterval(downTimerId)
+    clearInterval(leftTimerId)
+    clearInterval(rightTimerId)
+  }
+
 
   function start() {
     if (!isGameOver) {
       createPlatforms()
       createDoodler()
       setInterval(movePlatforms,30)
-      jump()
+      jump(startPoint)
       document.addEventListener('keyup', control)
     }
   }
-
   start()
-
 })
